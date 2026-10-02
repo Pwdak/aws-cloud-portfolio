@@ -1,0 +1,29 @@
+Confirmé sans ambiguïté cette fois — `invocations_in_this_container: 1`, `container_age_seconds: 0.0`, et surtout la ligne `INIT_START` suivie d'un `REPORT` contenant bien `Init Duration: 102.68 ms`. C'est un cold start propre et bien capturé.
+
+### Lecture détaillée de ce que tu observes
+
+- **`INIT_START`** : AWS a dû créer un tout nouvel environnement d'exécution (télécharger le runtime Python, initialiser le conteneur) — c'est la phase qu'on ne voit jamais lors d'un appel warm.
+- **`Init Duration: 102.68 ms`** : le temps pris par cette phase d'initialisation, **séparé** du `Duration: 2.27 ms` qui est le temps d'exécution réel de ton handler.
+- **`Billed Duration: 105 ms`** : remarque intéressante, AWS facture la somme init + exécution lors d'un cold start (102.68 + 2.27 ≈ 105) — point utile à connaître : **le cold start a un coût réel facturé**, pas juste un coût de latence pour l'utilisateur.
+
+### Compare avec le Test 1 (warm)
+
+Le `REPORT` que tu avais capturé juste avant (`Duration: 1.79 ms, Billed Duration: 2 ms`, sans `Init Duration`) correspondait à un appel **warm** — aucune phase d'initialisation, facturation uniquement sur le temps d'exécution réel. La différence est flagrante : **105 ms facturées (cold) vs 2 ms (warm)**, un facteur ~50x.
+
+### Pourquoi c'est une donnée d'entretien concrète à avoir en tête
+
+Si on te demande *"comment réduire la latence d'une API Lambda"*, tu peux maintenant répondre avec une vraie mesure observée, pas une théorie abstraite : *"J'ai mesuré un cold start à environ 100ms sur une fonction Python simple — sur une fonction avec plus de dépendances ou en Java/.NET, ce chiffre peut monter à plusieurs secondes. Les solutions : Provisioned Concurrency pour éliminer le cold start sur les fonctions critiques en latence, garder les packages légers, ou réutiliser les connexions/clients SDK en les initialisant hors du handler."*
+
+Labo Jour 10 complet et validé : création Lambda + API Gateway, mécanisme resource-based policy démontré par l'erreur puis la correction, warm/cold start mesurés avec de vraies données, en plus de la mise en place du state distant et du portfolio GitHub en cours de route — journée particulièrement riche.
+
+---
+
+### Résumé Jour 10
+
+- **Lambda** : cold start (`INIT_START` + `Init Duration` dans les logs) vs warm (environnement réutilisé, variables globales persistantes)
+- **Un seul rôle IAM** pour Lambda (execution role = à la fois infra ET applicatif, contrairement à ECS qui sépare les deux)
+- **Resource-based policy obligatoire** (`aws_lambda_permission`) pour toute invocation externe (API Gateway, S3, etc.) — même pattern que Jour 1 (S3 cross-account) et Jour 7 (KMS key policy)
+- **HTTP API vs REST API** : HTTP API par défaut aujourd'hui (plus rapide, moins cher), REST API si besoin de fonctionnalités avancées (usage plans, cache, WAF)
+- **Terraform** : backend S3 + DynamoDB lock configuré et validé, migration state local → distant, séparation state par projet (bonne pratique entreprise), portfolio GitHub initialisé
+
+---
