@@ -1,0 +1,11 @@
+@"
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.tfvars.example
+
+# Terraform lock (à garder en fait, voir remarque plus bas)
+!.terraform.lock.hcl
+"@ | Out-File -Encoding utf8 .gitignore

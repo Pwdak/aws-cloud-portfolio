@@ -1,0 +1,4 @@
+Va dans CloudWatch → Log groups, observe s'il y en a déjà (souvent créés automatiquement par d'autres services).
+Crée une alarme sur le CPU d'une de tes instances existantes (CPUUtilization > 70% pendant 5 min), avec notification SNS vers ton email.
+Va dans CloudTrail → Event history, cherche les événements récents liés à tes actions de la semaine (RunInstances, CreateVpc...) → observe qui (ton IAM user), quand, depuis quelle IP.
+Le test le plus important : va dans Systems Manager → Session Manager, essaie de démarrer une session vers une de tes instances existantes. Si elle n'a pas le rôle IAM adéquat, ça va échouer — c'est volontaire, on va corriger ça en Terraform.
